@@ -1,4 +1,8 @@
+<?php
 
+require_once(dirname(__FILE__) . "/process.php");
+
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -405,19 +409,28 @@
 	<script src="bower_components/jquery-file-upload/js/jquery.fileupload.js"></script>
 
 <script>
+
+function getPathFromUrl(url) {
+	console.log(url);
+  return url.split("?")[0];
+}
+
 /*jslint unparam: true */
 /*global window, $ */
 $(function () {
+
     'use strict';
     // Change this to the location of your server-side upload handler:
-    var url = 'process.php';
+    var url = 'upload.php';
     $('#fileupload').fileupload({
         url: url,
         dataType: 'json',
         done: function (e, data) {
-            $.each(data.result.files, function (index, file) {
-                $('<p/>').text(file.name).appendTo('#files');
-            });
+        	if(!data.result.status) {
+        		console.log(data.result.error);
+        	} else {
+        		window.location.href = getPathFromUrl(document.URL) + "?file=" + data.result.filename;
+        	}
         },
         progressall: function (e, data) {
             var progress = parseInt(data.loaded / data.total * 100, 10);
