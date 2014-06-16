@@ -9,7 +9,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="bower_components/bootstrap/assets/ico/favicon.ico">
 
-    <title>Theme Template for Bootstrap</title>
+    <title>HAR Analyser | Rightster</title>
 
     <!-- Bootstrap core CSS -->
     <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -41,7 +41,7 @@
 	        <i class="glyphicon glyphicon-plus"></i>
 	        <span>Select files...</span>
 	        <!-- The file input field used as target for the file upload widget -->
-	        <input id="fileupload" type="file" name="files[]" multiple>
+	        <input id="fileupload" type="file" name="har_file">
 	    </span>	
 	    <input type="submit" name="submit" value="Upload" class="btn btn-sm btn-default" />
 	</form>
