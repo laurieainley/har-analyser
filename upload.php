@@ -3,7 +3,7 @@
 require_once(dirname(__FILE__) . "/config.php");
 require_once(dirname(__FILE__) . "/utilities.php");
 
- if(!is_dir(UPLOADS_BASE)) {
+ if(!is_dir(dirname(__FILE__) . "/" . UPLOADS_BASE)) {
 	mkdir(UPLOADS_BASE);
 	chmod(UPLOADS_BASE, 0777);
 }
@@ -33,7 +33,14 @@ if(!$status) {
 	$safeFilename = preg_replace("/[^a-z0-9\.]/", "", strtolower($file["name"])) . ".har";
 	$currentDate = new DateTime;
 	$newFilename = $currentDate->format("Ymd-His") . "-" . $safeFilename;
-	move_uploaded_file($file["tmp_name"], UPLOADS_BASE . "/" . $newFilename);
+	
+	// move file into uploads folder
+	move_uploaded_file($file["tmp_name"], dirname(__FILE__) . "/" . UPLOADS_BASE . "/" . $newFilename);
+
+	$contents = "onInputData(" . file_get_contents(dirname(__FILE__) . "/" . UPLOADS_BASE . "/" . $newFilename) . ")";
+
+	file_put_contents(dirname(__FILE__) . "/" . UPLOADS_BASE . "/" . $newFilename . "p", $contents);
+
 	$response["filename"] = $newFilename;
 }
 
