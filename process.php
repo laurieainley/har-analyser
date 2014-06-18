@@ -2,12 +2,18 @@
 
 require_once(dirname(__FILE__) . "/config.php");
 require_once(dirname(__FILE__) . "/utilities.php");
+require_once(dirname(__FILE__) . "/classes/PlayerDiagnostics.php");
 
 if(isset($_GET["file"]) && $_GET["file"] != "") {
 	$diag = new PlayerDiagnostics;
 	$diag->setFile($_GET["file"]);
 	$diag->process();
+?>
 
+<div class="page-header">
+	<h2>Results</h2>
+</div>
+	<?php
 	print "Iframe Load: " . $diag->iframeTime/1000 . " secs (" . number_format($diag->iframeTime/$diag->totalTime*100, 2) . "% of total)<br />\n";
 	print "Player Load: " . $diag->playerTime/1000 . " secs (" . number_format($diag->playerTime/$diag->totalTime*100, 2) . "% of total)<br />\n";
 	print "Playlist Load: " . $diag->playlistTime/1000 . " secs (" . number_format($diag->playlistTime/$diag->totalTime*100, 2) . "% of total)<br />\n";
@@ -15,120 +21,39 @@ if(isset($_GET["file"]) && $_GET["file"] != "") {
 	print "Ad call Load: " . $diag->adCallTime/1000 . " secs (" . number_format($diag->adCallTime/$diag->totalTime*100, 2) . "% of total)<br />\n";
 	print "Video Load: " . $diag->assetTime/1000 . " secs (" . number_format($diag->assetTime/$diag->totalTime*100, 2) . "% of total)<br />\n";
 
-	print "View detailed request breakdown <a href=\"http://www.softwareishard.com/har/viewer/?inputUrl=" . $_GET["file"] . "p\">here</a>.";
+	print "View detailed request breakdown <a href=\"" . $_SERVER["HTTP_HOST"] . "http://www.softwareishard.com/har/viewer/?inputUrl=" . $_GET["file"] . "p\">here</a>.";
 
 }
 
-class PlayerDiagnostics {
+?>
 
-	public $file;
-	public $absoluteFile;
-	public $JSONdata;
-	public $data;
-	public $slimData;
-	public $error;
-	public $requestStart;
-	public $events;
-	public $iframeTime;
-	public $playerTime;
-	public $playlistTime;
-	public $adPluginTime;
-	public $adCallTime;
-	public $assetTime;
-	public $totalTime;
+<script type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization',
+       'version':'1','packages':['timeline']}]}"></script>
+<script type="text/javascript">
 
-	public function setFile($file) {
-		$this->file = $file;
-		$this->absoluteFile = UPLOADS_BASE . "/" . $this->file;
-		$this->JSONdata = file_get_contents($this->absoluteFile);
-	}
+google.setOnLoadCallback(drawChart);
+function drawChart() {
+  var container = document.getElementById('timeline');
+  var chart = new google.visualization.Timeline(container);
+  var dataTable = new google.visualization.DataTable();
+  dataTable.addColumn({ type: 'string', id: 'Name' });
+  dataTable.addColumn({ type: 'number', id: 'Start' });
+  dataTable.addColumn({ type: 'number', id: 'End' });
+  dataTable.addRows([
+    [ 'iframe Load',			0, 																	<?= $diag->iframeTime; ?> ],
+    [ 'Player Load',    	<?= $diag->iframeTime; ?>,			<?= ($diag->iframeTime + $diag->playerTime); ?> ],
+    [ 'Playlist Load',    <?= $diag->playerTime; ?>,			<?= ($diag->playerTime + $diag->playlistTime); ?> ],
+    [ 'Ad Plugin Load',   <?= $diag->playlistTime; ?>,			<?= ($diag->playlistTime + $diag->adPluginTime); ?> ],
+    [ 'Ad Call Load',    	<?= $diag->adPluginTime; ?>,			<?= ($diag->adPluginTime + $diag->adCallTime); ?> ],
+    [ 'Video Load',    		<?= $diag->adCallTime; ?>,			<?= ($diag->adCallTime + $diag->assetTime); ?> ]
+  ]);
 
-	private function convertFromISO($iso) {
-		return DateTime::createFromFormat("Y-m-d\TH:i:s.u\Z", $iso);
-	}
+  var options = {
+    timeline: { showRowLabels: false }
+  };
 
-	private function extractKeyData($entries) {
-		foreach($entries as $node) {
-			$time = $this->convertFromISO($node->startedDateTime);
-			$diff = dateTimeToMilliseconds($time) - dateTimeToMilliseconds($this->requestStart);
-			$nodes[] = array(
-				"startOffset" => $diff,
-				"url" => $node->request->url,
-				"duration" => $node->time,
-				"requestSize" => $node->request->bodySize,
-				"method" => $node->request->method,
-				"responseSize" => $node->response->bodySize
-			);
-		}
-
-		usort($nodes, "startSort");
-
-		return $nodes;
-
-	}
-
-	private function identifyKeyEvents($data) {
-		$this->events = array();
-
-		// loop once, extract all
-		foreach($this->slimData as $item) {
-
-			if(!isset($this->events["iframeStart"]) && preg_match("~.*//vds\.rightster\.com/v/.{14}\?target=iframe.*~", urldecode($item["url"]))) {
-				$this->events["iframeStart"] = $item;
-			}
-			if(!isset($this->events["playerStart"]) && preg_match("~.*//player.rightster.com/.*/Player.swf.*~", urldecode($item["url"]))) {
-				$this->events["playerStart"] = $item;
-			}
-			if(!isset($this->events["playlistStart"]) && preg_match("~.*//vds.*\.rightster\.com/v/.{14}\?.*fn=get_video_info.*~", urldecode($item["url"]))) {
-				$this->events["playlistStart"] = $item;
-			}
-			if(!isset($this->events["adPluginStart"]) && preg_match("~http://vox-static\.liverail\.com/swf/.*/admanager.swf~", urldecode($item["url"]))) {
-				$this->events["adPluginStart"] = $item;
-			}
-			if(!isset($this->events["adCallStart"]) && preg_match("~^.*//ad4\.liverail\.com/?$~", urldecode($item["url"])) && $item["method"] == "POST") {
-				$this->events["adCallStart"] = $item;
-			}
-			if(!isset($this->events["assetStart"]) && preg_match("~.*//videos\.rightster\.com/.*/videos/.*~", urldecode($item["url"]))) {
-				$this->events["assetStart"] = $item;
-			}
-			if(!isset($this->events["playStart"]) && preg_match("~.*//vds.*\.rightster\.com/v/.{14}\?.*fn=count_play.*~", urldecode($item["url"]))) {
-				$this->events["playStart"] = $item;
-			}			
-
-		}
-	}
-
-	private function calculateKeyDurations() {
-		$this->iframeTime = $this->events["playerStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
-		$this->playerTime = $this->events["playlistStart"]["startOffset"] - $this->events["playerStart"]["startOffset"];
-		$this->playlistTime = $this->events["adPluginStart"]["startOffset"] - $this->events["playlistStart"]["startOffset"];
-		$this->adPluginTime = $this->events["adCallStart"]["startOffset"] - $this->events["adPluginStart"]["startOffset"];
-		$this->adCallTime = $this->events["assetStart"]["startOffset"] - $this->events["adCallStart"]["startOffset"];
-		$this->assetTime = $this->events["playStart"]["startOffset"] - $this->events["assetStart"]["startOffset"];
-
-		$this->totalTime = $this->events["playStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
-	}
-
-	public function process() {
-
-		if(!isJson($this->JSONdata)) {
-			$this->error = "Invalid JSON file uploaded";
-			return false;
-		}
-
-		$this->data = json_decode($this->JSONdata);
-
-		// create date/time object including microseconds e.g. 2014-05-21T17:35:50.688Z
-		$this->requestStart = $this->convertFromISO($this->data->log->pages[0]->startedDateTime);
-
-		// simplify log file into array of only required data
-		$this->slimData = $this->extractKeyData($this->data->log->entries);
-
-		$this->identifyKeyEvents($this->slimData);
-
-		$this->calculateKeyDurations($this->events);
-
-	}
-
+  chart.draw(dataTable, options);
 }
+</script>
 
+<div id="timeline" style="width: 900px; height: 400px;"></div>

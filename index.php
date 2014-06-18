@@ -1,8 +1,3 @@
-<?php
-
-require_once(dirname(__FILE__) . "/process.php");
-
-?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -25,6 +20,7 @@ require_once(dirname(__FILE__) . "/process.php");
 
     <!-- Dropzone -->
     <link href="bower_components/jquery-file-upload/css/jquery.fileupload.css" rel="stylesheet">
+    <link href="bower_components/jquery-file-upload/css/jquery.fileupload-ui.css" rel="stylesheet">
 
     <!-- Just for debugging purposes. Don't actually copy this line! -->
     <!--[if lt IE 9]><script src="bower_components/bootstrap/assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
@@ -38,18 +34,46 @@ require_once(dirname(__FILE__) . "/process.php");
 
   <body role="document">
 
-  	<h1>Player Load Diagnostics</h1>
+    <div class="container theme-showcase" role="main">
 
-	<form id="upload-form" action="process.php" method="post" enctype="multipart/form-data">
-		<span class="btn btn-success fileinput-button">
-	        <i class="glyphicon glyphicon-plus"></i>
-	        <span>Select files...</span>
-	        <!-- The file input field used as target for the file upload widget -->
-	        <input id="fileupload" type="file" name="har_file">
-	    </span>	
-	    <input type="submit" name="submit" value="Upload" class="btn btn-sm btn-default" />
-	</form>
+      <div class="jumbotron">
 
+
+        <h1>Player Load Diagnostics</h1>
+
+        <p>Drag and drop a valid HAR file onto this page, or click the button below to select a file to upload.</p>
+
+        <form id="upload-form" action="process.php" method="post" enctype="multipart/form-data">
+          <span class="btn btn-success fileinput-button">
+                <i class="glyphicon glyphicon-plus"></i>
+                <span>Select files...</span>
+                <!-- The file input field used as target for the file upload widget -->
+                <input id="fileupload" type="file" name="har_file">
+            </span> 
+        </form>
+
+        <div id="progress" class="progress">
+          <div class="bar" style="width: 0%;"></div>
+        </div>
+
+      </div>
+
+      <?php
+
+      if(isset($_GET["file"]) AND $_GET["file"] != "") {
+
+        require_once(dirname(__FILE__) . "/process.php");
+
+      } else {
+
+        require_once(dirname(__FILE__) . "/instructions.php");
+
+
+      }
+
+      ?>
+
+    </div>
   	<?php /*
 
     <!-- Fixed navbar -->
