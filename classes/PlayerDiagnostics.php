@@ -7,6 +7,7 @@ class PlayerDiagnostics {
 	public $JSONdata;
 	public $data;
 	public $slimData;
+	public $durationData;
 	public $error;
 	public $requestStart;
 	public $events;
@@ -80,14 +81,22 @@ class PlayerDiagnostics {
 	}
 
 	private function calculateKeyDurations() {
-		$this->iframeTime = $this->events["playerStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
-		$this->playerTime = $this->events["playlistStart"]["startOffset"] - $this->events["playerStart"]["startOffset"];
-		$this->playlistTime = $this->events["adPluginStart"]["startOffset"] - $this->events["playlistStart"]["startOffset"];
-		$this->adPluginTime = $this->events["adCallStart"]["startOffset"] - $this->events["adPluginStart"]["startOffset"];
-		$this->adCallTime = $this->events["assetStart"]["startOffset"] - $this->events["adCallStart"]["startOffset"];
-		$this->assetTime = $this->events["playStart"]["startOffset"] - $this->events["assetStart"]["startOffset"];
+		$this->events["iframeStart"]["interval"] = $this->events["playerStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
+		$this->events["playerStart"]["interval"] = $this->events["playlistStart"]["startOffset"] - $this->events["playerStart"]["startOffset"];
+		$this->events["playlistStart"]["interval"] = $this->events["adPluginStart"]["startOffset"] - $this->events["playlistStart"]["startOffset"];
+		$this->events["adPluginStart"]["interval"] = $this->events["adCallStart"]["startOffset"] - $this->events["adPluginStart"]["startOffset"];
+		$this->events["adCallStart"]["interval"] = $this->events["assetStart"]["startOffset"] - $this->events["adCallStart"]["startOffset"];
+		$this->events["assetStart"]["interval"] = $this->events["playStart"]["startOffset"] - $this->events["assetStart"]["startOffset"];
 
 		$this->totalTime = $this->events["playStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
+	}
+
+	private function nodesByDuration($durationData) {
+
+		usort($durationData, "durationSort");
+
+		return $durationData;
+
 	}
 
 	public function process() {
@@ -104,6 +113,8 @@ class PlayerDiagnostics {
 
 		// simplify log file into array of only required data
 		$this->slimData = $this->extractKeyData($this->data->log->entries);
+
+		$this->durationData = $this->nodesByDuration($this->slimData);
 
 		$this->identifyKeyEvents($this->slimData);
 

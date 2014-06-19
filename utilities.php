@@ -26,3 +26,11 @@ function startSort($a, $b)
     }
     return ($a["startOffset"] < $b["startOffset"]) ? -1 : 1;
 }
+
+function durationSort($a, $b)
+{
+    if ($a["duration"] == $b["duration"]) {
+        return 0;
+    }
+    return ($a["duration"] > $b["duration"]) ? -1 : 1;
+}
