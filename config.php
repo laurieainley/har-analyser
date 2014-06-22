@@ -1,7 +1,8 @@
 <?php
 
 const UPLOADS_BASE = "uploads";
-const THRESHOLD_SLOW = 600;
+const THRESHOLD_SLOW = 1000;
+const MAX_REQUESTS = 30;
 
 if(!is_dir(UPLOADS_BASE)) {
 	mkdir(UPLOADS_BASE);

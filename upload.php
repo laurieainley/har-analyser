@@ -14,7 +14,7 @@ $status = false;
 
 // check if the uploaded file is valid JSON
 if(!isFileJson($file["tmp_name"])) {
-	$errorMsg = "Uploaded file is not a valid JSON file";
+	$errorMsg = "The uploaded file was not a valid HAR file. Please capture another log file, following the instructions <a href=\"" . getBaseURL() . "\">here</a>, and upload it again.";
 } else {
 	$status = true;
 }
@@ -29,8 +29,9 @@ if(!$status) {
 	$response["error"] = $errorMsg;
 	$response["test"] = "test";
 } else {
+	$filename = explode(".", $file["name"]);
 	// rename file to include date and time and remove unusual characters
-	$safeFilename = preg_replace("/[^a-z0-9\.]/", "", strtolower($file["name"])) . ".har";
+	$safeFilename = preg_replace("/[^a-z0-9\.]/", "", strtolower($filename[0])) . ".har";
 	$currentDate = new DateTime;
 	$newFilename = $currentDate->format("Ymd-His") . "-" . $safeFilename;
 	

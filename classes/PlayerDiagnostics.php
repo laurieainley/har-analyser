@@ -18,6 +18,9 @@ class PlayerDiagnostics {
 	public $adCallTime;
 	public $assetTime;
 	public $totalTime;
+	public $iframeRequests;
+	public $totalRequests;
+	public $numAuctions;
 
 	public function setFile($file) {
 		$this->file = $file;
@@ -34,14 +37,18 @@ class PlayerDiagnostics {
 			$time = $this->convertFromISO($node->startedDateTime);
 			$diff = dateTimeToMilliseconds($time) - dateTimeToMilliseconds($this->requestStart);
 			$nodes[] = array(
-				"startOffset" => $diff,
-				"url" => $node->request->url,
-				"duration" => $node->time,
-				"requestSize" => $node->request->bodySize,
-				"method" => $node->request->method,
-				"responseSize" => $node->response->bodySize
+				"startOffset"		 	=> $diff,
+				"url" 						=> $node->request->url,
+				"duration" 				=> $node->time,
+				"requestSize" 		=> $node->request->bodySize,
+				"method" 					=> $node->request->method,
+				"responseSize" 		=> $node->response->bodySize,
+				"timings" 				=> $node->timings,
+				"filesize" 				=> $node->response->content->size,
 			);
 		}
+
+		$this->totalRequests = count($entries);
 
 		usort($nodes, "startSort");
 
@@ -51,10 +58,14 @@ class PlayerDiagnostics {
 
 	private function identifyKeyEvents($data) {
 		$this->events = array();
+		$this->numAuctions = 0;
 
 		// loop once, extract all
 		foreach($this->slimData as $item) {
 
+			if(!isset($this->events["pageStart"]) && isset($this->pageUrl) && $this->pageUrl == $item["url"]) {
+				$this->events["pageStart"] = $item;
+			}
 			if(!isset($this->events["iframeStart"]) && preg_match("~.*//vds\.rightster\.com/v/.{14}\?target=iframe.*~", urldecode($item["url"]))) {
 				$this->events["iframeStart"] = $item;
 			}
@@ -70,6 +81,9 @@ class PlayerDiagnostics {
 			if(!isset($this->events["adCallStart"]) && preg_match("~^.*//ad4\.liverail\.com/?$~", urldecode($item["url"])) && $item["method"] == "POST") {
 				$this->events["adCallStart"] = $item;
 			}
+			if(!isset($this->events["adPlaybackStart"]) && preg_match("~.*//t4\.liverail\.com/?.*metric=impression.*~", urldecode($item["url"]))) {
+				$this->events["adPlaybackStart"] = $item;
+			}
 			if(!isset($this->events["assetStart"]) && preg_match("~.*//videos\.rightster\.com/.*/videos/.*~", urldecode($item["url"]))) {
 				$this->events["assetStart"] = $item;
 			}
@@ -77,18 +91,37 @@ class PlayerDiagnostics {
 				$this->events["playStart"] = $item;
 			}			
 
+			if(preg_match("~^.*//ad4\.liverail\.com/?$~", urldecode($item["url"])) && $item["method"] == "POST") {
+				$this->numAuctions++;
+			}
+
 		}
 	}
 
 	private function calculateKeyDurations() {
-		$this->events["iframeStart"]["interval"] = $this->events["playerStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
-		$this->events["playerStart"]["interval"] = $this->events["playlistStart"]["startOffset"] - $this->events["playerStart"]["startOffset"];
-		$this->events["playlistStart"]["interval"] = $this->events["adPluginStart"]["startOffset"] - $this->events["playlistStart"]["startOffset"];
-		$this->events["adPluginStart"]["interval"] = $this->events["adCallStart"]["startOffset"] - $this->events["adPluginStart"]["startOffset"];
-		$this->events["adCallStart"]["interval"] = $this->events["assetStart"]["startOffset"] - $this->events["adCallStart"]["startOffset"];
-		$this->events["assetStart"]["interval"] = $this->events["playStart"]["startOffset"] - $this->events["assetStart"]["startOffset"];
 
-		$this->totalTime = $this->events["playStart"]["startOffset"] - $this->events["iframeStart"]["startOffset"];
+		$intervals = array();
+
+		// select only the events 
+
+		foreach($this->events as $ek => $ev) {
+			if(!empty($last)) {
+				$intervals[] = array("field" => $last, "end" => $ek);
+			}
+			$last = $ek;
+		}
+
+		foreach($intervals as $interval) {
+			if(isset($this->events[$interval["field"]])) {
+				if($interval["field"] == "playlistStart") {
+					$this->events[$interval["field"]]["interval"] = $this->events[$interval["field"]]["duration"];
+				} else {
+					$this->events[$interval["field"]]["interval"] = $this->events[$interval["end"]]["startOffset"] - $this->events[$interval["field"]]["startOffset"];
+				}
+			}
+		}
+
+		$this->totalTime = $this->events[$intervals[count($intervals)-1]["field"]]["startOffset"] - $this->events[$intervals[0]["field"]]["startOffset"];
 	}
 
 	private function nodesByDuration($durationData) {
@@ -110,6 +143,10 @@ class PlayerDiagnostics {
 
 		// create date/time object including microseconds e.g. 2014-05-21T17:35:50.688Z
 		$this->requestStart = $this->convertFromISO($this->data->log->pages[0]->startedDateTime);
+
+		if(isset($this->data->log->pages[0])) {
+			$this->pageUrl = $this->data->log->pages[0]->title;
+		}
 
 		// simplify log file into array of only required data
 		$this->slimData = $this->extractKeyData($this->data->log->entries);
