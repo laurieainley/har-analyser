@@ -26,7 +26,6 @@ if(isset($diag->events["pageStart"])) {
 	}
 	?>
 	<li>Total number of requests: <?php echo $diag->totalRequests; ?></li>
-  <li>Total loading time (discounting ad/video playback): <?php echo $diag->totalTime; ?></li>
 	<?php if(isset($diag->numAuctions) && $diag->numAuctions > 0) {
 		echo "<li>Number of ad auctions run: " . $diag->numAuctions . "</li>\n";
 	}
@@ -192,7 +191,7 @@ function drawChart() {
 </script>
 
 <h3>Component loading time (in seconds)</h3>
-<p>Note: All video playback removd from calculations.</p>
+<p>Note: All video playback removed from calculations.</p>
 <div id="timeline" style="width: 100%; height: <?php echo (($numFields * 45) + 50); ?>px;"></div>
 
 <h3>Breakdown by component (in seconds)</h3>
