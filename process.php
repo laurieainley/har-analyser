@@ -8,14 +8,124 @@ if(isset($_GET["file"]) && $_GET["file"] != "") {
 	$diag = new PlayerDiagnostics;
 	$diag->setFile($_GET["file"]);
 	$diag->process();
+
+  	$keyEvents = array(
+  		array(
+  			"field" 		=> "pageStart",
+  			"label" 		=> "Page Load",
+  			"lowThreshold" 	=> 4000,
+  			"highThreshold" => 8000,
+  		),
+	  	array(
+	  		"field" 		=> "iframeStart",
+	  		"label" 		=> "iframe Load",
+  			"lowThreshold" 	=> 3000,
+  			"highThreshold" => 6000,
+	  	),
+			array(
+	  		"field"			=> "playerStart",
+	  		"label" 		=> "Player Load",
+  			"lowThreshold" 	=> 1500,
+  			"highThreshold" => 3000,
+  		),
+			array(
+  			"field" 		=> "playlistStart",
+  			"label"			=> "Playlist Load",
+  			"lowThreshold" 	=> 1000,
+  			"highThreshold" => 2000,
+  		),
+			array(
+  			"field" 		=> "adPluginStart",
+  			"label" 		=> "Ad Plugin Load",
+  			"lowThreshold" 	=> 1000,
+  			"highThreshold" => 2000,
+  		),
+			array(
+  			"field" 		=> "adCallStart",
+  			"label" 		=> "Ad Call Load",
+  			"lowThreshold" 	=> 5000,
+  			"highThreshold" => 8000,
+  		),
+			//array(
+  		//	"field" 		=> "adPlaybackStart",
+  		//	"label" 		=> "Ad Playback",
+  		//	"lowThreshold" 	=> 1000,
+  		//	"highThreshold" => 2000,
+  		//),
+			array(
+  			"field" 		=> "assetStart",
+  			"label" 		=> "Video Initiation",
+  			"lowThreshold" 	=> 3000,
+  			"highThreshold" => 6000,
+  		)
+  	);
+
+  	$numEvents = count($keyEvents);
+
 ?>
 
 <div class="page-header">
 	<h2>Results</h2>
 </div>
 
-<h3>Summary</h3>
 
+<h3>Diagnosis</h3>
+
+<?php
+
+$timelineData = "";
+$donutData = "";
+
+$timelineData .= "timelineData.addRows([";
+$donutData .= "google.visualization.arrayToDataTable([";
+$donutData .= "['Component', 'Seconds'],";
+
+$diagnosisStr = "<table class=\"table-bordered table-condensed table-striped diagnosis-table\">\n";
+$diagnosisStr .= "<tr>\n<th class=\"col-md-2\">Component</th>\n<th class=\"col-md-2\">Status</th></tr>\n";
+
+$startTime = 0;
+$endTime = 0;
+
+$numFields = 0;
+
+for($i = 0; $i < $numEvents; $i++) {
+
+	if(isset($diag->events[$keyEvents[$i]["field"]])) {
+
+		$numFields++;
+
+		$endTime		+= $diag->events[$keyEvents[$i]["field"]]["interval"];
+
+		$timelineData 	.= "[ '" . $keyEvents[$i]["label"] . "',	$startTime, $endTime ],\n";
+		$donutData 		.= "[ '" . $keyEvents[$i]["label"] . "',	" . dp($diag->events[$keyEvents[$i]["field"]]["interval"] / 1000, 2, '.', '') . " ],\n";
+
+		$startTime 		+= $diag->events[$keyEvents[$i]["field"]]["interval"];
+
+		// diagnosis - threshold examination
+
+		$diagnosisStr 	.= "<tr>\n<td>" . $keyEvents[$i]["label"] . "</td>\n";
+
+		if($diag->events[$keyEvents[$i]["field"]]["interval"] > $keyEvents[$i]["highThreshold"]) {
+			$diagnosisStr .= "<td><span class=\"label label-danger\">Critical</span></td>\n";
+		} elseif($diag->events[$keyEvents[$i]["field"]]["interval"] > $keyEvents[$i]["lowThreshold"]) {
+			$diagnosisStr .= "<td><span class=\"label label-warning\">Warning</span></td>\n";
+		} else {
+			$diagnosisStr .= "<td><span class=\"label label-success\">OK</span></td>\n";
+		}
+	}
+
+	$diagnosisStr .= "</tr>\n";
+}
+
+$timelineData .= "]);";
+$donutData .= "]);";
+
+$diagnosisStr .= "</table>\n";
+
+echo $diagnosisStr;
+
+?>
+<h3>Summary</h3>
 <ul>
 <?php 
 if(isset($diag->events["pageStart"])) {
@@ -54,75 +164,6 @@ function drawChart() {
   timelineData.addColumn({ type: 'string', id: 'Name' });
   timelineData.addColumn({ type: 'number', id: 'Start' });
   timelineData.addColumn({ type: 'number', id: 'End' });
-
-  	<?php
-
-  	$keyEvents = array(
-  		array(
-  			"field" => "pageStart",
-  			"label" => "Page Load"
-  		),
-	  	array(
-	  		"field" => "iframeStart",
-	  		"label" => "iframe Load",
-	  	),
-			array(
-	  		"field" => "playerStart",
-	  		"label" => "Player Load",
-  		),
-			array(
-  			"field" => "playlistStart",
-  			"label"	=> "Playlist Load",
-  		),
-			array(
-  			"field" => "adPluginStart",
-  			"label" => "Ad Plugin Load",
-  		),
-			array(
-  			"field" => "adCallStart",
-  			"label" => "Ad Call Load",
-  		),
-			//array(
-  		//	"field" => "adPlaybackStart",
-  		//	"label" => "Ad Playback",
-  		//),
-			array(
-  			"field" => "assetStart",
-  			"label" => "Video Playback",
-  		)
-  	);
-
-  	$timelineData = "";
-  	$donutData = "";
-
-  	$timelineData .= "timelineData.addRows([";
-  	$donutData .= "google.visualization.arrayToDataTable([";
-  	$donutData .= "['Component', 'Seconds'],";
-
-  	$startTime = 0;
-  	$endTime = 0;
-
-  	$numEvents = count($keyEvents);
-  	$numFields = 0;
-
-  	for($i = 0; $i < $numEvents; $i++) {
-
-  		if(isset($diag->events[$keyEvents[$i]["field"]])) {
-
-  			$numFields++;
-
-	  		$endTime 		+= $diag->events[$keyEvents[$i]["field"]]["interval"];
-
-	  		$timelineData .= "[ '" . $keyEvents[$i]["label"] . "',	$startTime, $endTime ],\n";
-	  		$donutData .= "[ '" . $keyEvents[$i]["label"] . "',	" . dp($diag->events[$keyEvents[$i]["field"]]["interval"] / 1000, 2, '.', '') . " ],\n";
-
-	  		$startTime 	+= $diag->events[$keyEvents[$i]["field"]]["interval"];
-	  	}
-  	}
-
-  	$timelineData .= "]);";
-		$donutData .= "]);";
-	?>
 
   var options = {
   };
@@ -200,6 +241,6 @@ function drawChart() {
 <?php
 if($numRequests > 0) {
 ?>
-<h3>Possible symptoms (slowest requests)</h3>
+<h3>Possible suspects (slowest requests)</h3>
 <div id="requests-chart" style="width: 100%; height: <?php echo ($numRequests * 45) + 50; ?>px;"></div>
-<? } ?>
+<?php } ?>

@@ -1,3 +1,15 @@
 #progress {
 	margin-top: 16px;
 }
+
+.instructions-list {
+	margin-bottom: 64px;
+}
+
+.instructions-list img {
+	margin-bottom: 32px;
+}
+
+.diagnosis-table th {
+	width: 180px;
+}

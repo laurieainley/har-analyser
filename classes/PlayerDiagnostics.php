@@ -113,11 +113,11 @@ class PlayerDiagnostics {
 
 		foreach($intervals as $interval) {
 			if(isset($this->events[$interval["field"]])) {
-				if($interval["field"] == "playlistStart") {
-					$this->events[$interval["field"]]["interval"] = $this->events[$interval["field"]]["duration"];
-				} else {
+				//if($interval["field"] == "playlistStart") {
+				//	$this->events[$interval["field"]]["interval"] = $this->events[$interval["field"]]["duration"];
+				//} else {
 					$this->events[$interval["field"]]["interval"] = $this->events[$interval["end"]]["startOffset"] - $this->events[$interval["field"]]["startOffset"];
-				}
+				//}
 			}
 		}
 
