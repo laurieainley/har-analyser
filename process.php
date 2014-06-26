@@ -68,6 +68,7 @@ if(isset($_GET["file"]) && $_GET["file"] != "") {
 	<h2>Results</h2>
 </div>
 
+<p>Link to this page: <a href="http:<?php echo getBaseURL() . "?file=" . $_GET["file"] . "\">http:" . getBaseURL() . "?file=" . $_GET["file"] . "</a></p>\n"; ?>
 
 <h3>Diagnosis</h3>
 
@@ -128,6 +129,9 @@ echo $diagnosisStr;
 <h3>Summary</h3>
 <ul>
 <?php 
+if(isset($diag->pageUrl)) {
+	echo "<li>URL: <a href=\"" . $diag->pageUrl . "\">" . $diag->pageUrl . "</a></li>\n";
+}
 if(isset($diag->events["pageStart"])) {
 	if(isset($diag->events["adPlaybackStart"])) {
 		echo "<li>Page load to ad playback time: " . dp(($diag->events["adPlaybackStart"]["startOffset"] - $diag->events["pageStart"]["startOffset"]) / 1000) . " secs</li>\n";

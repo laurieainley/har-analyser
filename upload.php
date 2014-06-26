@@ -4,8 +4,8 @@ require_once(dirname(__FILE__) . "/config.php");
 require_once(dirname(__FILE__) . "/utilities.php");
 
  if(!is_dir(dirname(__FILE__) . "/" . UPLOADS_BASE)) {
-	mkdir(UPLOADS_BASE);
-	chmod(UPLOADS_BASE, 0777);
+	mkdir(dirname(__FILE__) . "/" . UPLOADS_BASE);
+	chmod(dirname(__FILE__) . "/" . UPLOADS_BASE, 0744);
 }
 
 $file = $_FILES["har_file"];
